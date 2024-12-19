@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import PaginationControls from "@/components/pagination/PaginationControls";
 import ItemsPerPage from "@/components/pagination/ItemsPerPage";
-import ColumnFilter from "@/components/filters/ColumnFilter";
-import { filterData, searchData } from "@/lib/utils/filters";
+import { FilterPopover } from "@/components/filters/FilterPopover";
 import {
   Table,
   TableBody,
@@ -15,15 +14,10 @@ import {
 } from "@/components/ui/table";
 import Link from "next/link";
 import { ArrowUp, ArrowDown, ArrowDownUp } from "lucide-react";
+import { useTableData } from "@/hooks/useTableData";
+import { usePagination } from "@/hooks/usePagination";
 
 const DetailsPage = () => {
-  // State management
-  const [details, setDetails] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [totalItems, setTotalItems] = useState(0);
-  const [allItems, setAllItems] = useState(0);
-  const [error, setError] = useState(null);
   const [sortColumn, setSortColumn] = useState("BANK");
   const [sortOrder, setSortOrder] = useState("asc");
   const [searchQuery, setSearchQuery] = useState("");
@@ -35,68 +29,99 @@ const DetailsPage = () => {
     STATE: "",
   });
 
-  useEffect(() => {
-    const fetchDetails = async () => {
-      try {
-        const response = await fetch(
-          `/api/details?page=${currentPage}&limit=${itemsPerPage}&sort=${sortColumn}&order=${sortOrder}&search=${searchQuery}`
-        );
-        const data = await response.json();
+  const {
+    currentPage,
+    itemsPerPage,
+    handlePageChange,
+    handleItemsPerPageChange,
+    getPaginationInfo,
+  } = usePagination({});
 
-        if (data.success) {
-          setDetails(data.data);
-          setTotalItems(data.total);
-          setAllItems(data.total);
-        } else {
-          setError(data.error);
+  const { data, totalItems, allItems, error, loading, fetchData } =
+    useTableData();
+
+  React.useEffect(() => {
+    fetchData({
+      currentPage,
+      itemsPerPage,
+      sortColumn,
+      sortOrder,
+      filters: columnFilters,
+      searchQuery,
+    });
+  }, [
+    currentPage,
+    itemsPerPage,
+    sortColumn,
+    sortOrder,
+    columnFilters,
+    searchQuery,
+    fetchData,
+  ]);
+
+  const handleSort = useCallback(
+    (column) => {
+      setSortOrder((prevOrder) => {
+        if (column === sortColumn) {
+          return prevOrder === "asc" ? "desc" : "asc";
         }
-      } catch (err) {
-        setError("Failed to fetch data");
-      }
-    };
-
-    fetchDetails();
-  }, [currentPage, itemsPerPage, sortColumn, sortOrder, searchQuery]);
-
-  const handleSort = (column) => {
-    if (column === sortColumn) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-    } else {
+        return "asc";
+      });
       setSortColumn(column);
-      setSortOrder("asc");
-    }
-  };
+    },
+    [sortColumn]
+  );
 
-  const renderSortIcon = (column) => {
-    if (sortColumn === column) {
-      return sortOrder === "asc" ? (
-        <ArrowUp className="h-4 w-4 ml-2" />
-      ) : (
-        <ArrowDown className="h-4 w-4 ml-2" />
-      );
-    }
-    return <ArrowDownUp className="h-4 w-4 ml-2" />;
-  };
+  const handleColumnFilterChange = useCallback(
+    (column, value) => {
+      setColumnFilters((prev) => ({
+        ...prev,
+        [column]: value,
+      }));
+      handlePageChange(1); // Reset to first page when filter changes
+    },
+    [handlePageChange]
+  );
 
-  const handleColumnFilterChange = (column, value) => {
-    setColumnFilters((prev) => ({
-      ...prev,
-      [column]: value,
-    }));
-    setCurrentPage(1);
-  };
+  const handleColumnFilterReset = useCallback(
+    (column) => {
+      setColumnFilters((prev) => ({
+        ...prev,
+        [column]: "",
+      }));
+      handlePageChange(1);
+    },
+    [handlePageChange]
+  );
 
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const renderSortIcon = useCallback(
+    (column) => {
+      if (column === sortColumn) {
+        return sortOrder === "asc" ? (
+          <ArrowUp className="h-4 w-4 ml-2" />
+        ) : (
+          <ArrowDown className="h-4 w-4 ml-2" />
+        );
+      }
+      return <ArrowDownUp className="h-4 w-4 ml-2" />;
+    },
+    [sortColumn, sortOrder]
+  );
 
   if (error) {
     return <div className="p-4 text-red-500">Error: {error}</div>;
   }
 
+  if (loading) {
+    return <div className="p-4">Loading...</div>;
+  }
+
+  const paginationInfo = getPaginationInfo(totalItems);
+
   return (
     <div className="p-4">
       <h1 className="text-xl font-bold mb-4">Bank Details</h1>
 
-      {/* Search */}
       <div className="mb-4">
         <input
           type="text"
@@ -104,13 +129,12 @@ const DetailsPage = () => {
           value={searchQuery}
           onChange={(e) => {
             setSearchQuery(e.target.value);
-            setCurrentPage(1);
+            handlePageChange(1);
           }}
           className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
         />
       </div>
 
-      {/* Table */}
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
@@ -118,19 +142,22 @@ const DetailsPage = () => {
               {Object.keys(columnFilters).map((column) => (
                 <TableHead key={column}>
                   <div className="space-y-2">
-                    <div
-                      className="flex items-center cursor-pointer"
-                      onClick={() => handleSort(column)}
-                    >
-                      {column} {renderSortIcon(column)}
+                    <div className="flex items-center justify-between">
+                      <div
+                        className="flex items-center cursor-pointer"
+                        onClick={() => handleSort(column)}
+                      >
+                        {column} {renderSortIcon(column)}
+                      </div>
+                      <FilterPopover
+                        column={column}
+                        value={columnFilters[column]}
+                        onChange={(value) =>
+                          handleColumnFilterChange(column, value)
+                        }
+                        onReset={() => handleColumnFilterReset(column)}
+                      />
                     </div>
-                    <ColumnFilter
-                      column={column}
-                      value={columnFilters[column]}
-                      onChange={(value) =>
-                        handleColumnFilterChange(column, value)
-                      }
-                    />
                   </div>
                 </TableHead>
               ))}
@@ -138,7 +165,7 @@ const DetailsPage = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {details.map((detail) => (
+            {data.map((detail) => (
               <TableRow key={detail._id}>
                 <TableCell>{detail.BANK}</TableCell>
                 <TableCell>
@@ -159,28 +186,23 @@ const DetailsPage = () => {
         </Table>
       </div>
 
-      {/* Pagination Controls */}
       <div className="mt-4 flex justify-between items-center">
         <ItemsPerPage
           value={itemsPerPage}
-          onChange={(value) => {
-            setItemsPerPage(value);
-            setCurrentPage(1);
-          }}
+          onChange={handleItemsPerPageChange}
         />
 
         <PaginationControls
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
+          currentPage={paginationInfo.currentPage}
+          totalPages={paginationInfo.totalPages}
+          onPageChange={handlePageChange}
         />
       </div>
 
-      {/* Results Summary */}
       <div className="mt-4 text-sm text-gray-600">
         <p>
-          Showing {Math.min(itemsPerPage, details.length)} of {totalItems}{" "}
-          results
+          Showing {paginationInfo.startIndex + 1} to {paginationInfo.endIndex}{" "}
+          of {totalItems} results
           {searchQuery && ` (filtered from ${allItems} total records)`}
         </p>
       </div>
