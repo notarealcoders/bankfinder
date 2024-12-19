@@ -7,42 +7,58 @@ export async function GET(req) {
     await connectToDatabase();
 
     const { searchParams } = new URL(req.url);
+    const distinct = searchParams.get("distinct");
+    const bank = searchParams.get("bank");
+    const state = searchParams.get("state");
+    const city = searchParams.get("city");
+
+    // Handle distinct queries for the locator
+    if (distinct) {
+      const query = {};
+
+      if (bank) query.BANK = bank;
+      if (state) query.STATE = state;
+      if (city) query.CITY1 = city;
+
+      const distinctValues = await Details.distinct(distinct, query);
+      return NextResponse.json({
+        success: true,
+        data: distinctValues.sort(),
+      });
+    }
+
+    // Handle regular queries
     const page = parseInt(searchParams.get("page")) || 1;
     const limit = parseInt(searchParams.get("limit")) || 5;
     const sort = searchParams.get("sort") || "BANK";
     const order = searchParams.get("order") || "asc";
     const search = searchParams.get("search") || "";
-    const filters = {};
+    const query = {};
 
-    // Get filter parameters
+    // Handle filters
     ["BANK", "IFSC", "BRANCH", "CITY1", "STATE"].forEach((field) => {
-      const value = searchParams.get(`filter_${field.toLowerCase()}`);
-      if (value) filters[field] = new RegExp(value, "i");
+      const filterValue = searchParams.get(`filter_${field.toLowerCase()}`);
+      if (filterValue) {
+        // Decode the URI component and use exact matching
+        query[field] = decodeURIComponent(filterValue);
+      }
     });
 
-    // Build query
-    let query = {};
-
-    // Add search
+    // Add search functionality
     if (search) {
+      const searchRegex = new RegExp(search, "i");
       query.$or = [
-        { BANK: new RegExp(search, "i") },
-        { IFSC: new RegExp(search, "i") },
-        { BRANCH: new RegExp(search, "i") },
-        { CITY1: new RegExp(search, "i") },
-        { STATE: new RegExp(search, "i") },
+        { BANK: searchRegex },
+        { IFSC: searchRegex },
+        { BRANCH: searchRegex },
+        { CITY1: searchRegex },
+        { STATE: searchRegex },
       ];
-    }
-
-    // Add filters
-    if (Object.keys(filters).length > 0) {
-      query = { ...query, ...filters };
     }
 
     const skip = (page - 1) * limit;
     const sortOrder = order === "asc" ? 1 : -1;
 
-    // Execute query with pagination
     const [details, total] = await Promise.all([
       Details.find(query)
         .sort({ [sort]: sortOrder })
