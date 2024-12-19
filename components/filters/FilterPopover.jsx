@@ -53,14 +53,14 @@ export function FilterPopover({ column, value, onChange, onReset }) {
               }}
             />
           </div>
-          <div className="flex justify-between">
+          <div className="flex flex-row-reverse justify-start gap-2">
             <Button
-              variant="outline"
+              variant="destructive"
               size="sm"
               className="px-3"
               onClick={handleReset}
             >
-              <X className="mr-2 h-4 w-4" />
+              {/* <X className="mr-2 h-4 w-4" /> */}
               Reset
             </Button>
             <Button size="sm" className="px-3" onClick={handleApply}>

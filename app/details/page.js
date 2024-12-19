@@ -12,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import Spinner from "@/components/ui/spinner";
 import Link from "next/link";
 import { ArrowUp, ArrowDown, ArrowDownUp } from "lucide-react";
 import { useTableData } from "@/hooks/useTableData";
@@ -37,8 +38,7 @@ const DetailsPage = () => {
     getPaginationInfo,
   } = usePagination({});
 
-  const { data, totalItems, allItems, error, loading, fetchData } =
-    useTableData();
+  const { data, totalItems, error, loading, fetchData } = useTableData();
 
   React.useEffect(() => {
     fetchData({
@@ -78,7 +78,7 @@ const DetailsPage = () => {
         ...prev,
         [column]: value,
       }));
-      handlePageChange(1); // Reset to first page when filter changes
+      handlePageChange(1);
     },
     [handlePageChange]
   );
@@ -112,10 +112,6 @@ const DetailsPage = () => {
     return <div className="p-4 text-red-500">Error: {error}</div>;
   }
 
-  if (loading) {
-    return <div className="p-4">Loading...</div>;
-  }
-
   const paginationInfo = getPaginationInfo(totalItems);
 
   return (
@@ -135,58 +131,64 @@ const DetailsPage = () => {
         />
       </div>
 
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              {Object.keys(columnFilters).map((column) => (
-                <TableHead key={column}>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div
-                        className="flex items-center cursor-pointer"
-                        onClick={() => handleSort(column)}
-                      >
-                        {column} {renderSortIcon(column)}
+      <div className="overflow-x-auto border rounded-lg">
+        <div className="min-h-[500px] max-h-[500px] overflow-y-auto relative">
+          {loading ? (
+            <Spinner className="absolute inset-0 bg-white/80" />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {Object.keys(columnFilters).map((column) => (
+                    <TableHead key={column}>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div
+                            className="flex items-center cursor-pointer"
+                            onClick={() => handleSort(column)}
+                          >
+                            {column} {renderSortIcon(column)}
+                          </div>
+                          <FilterPopover
+                            column={column}
+                            value={columnFilters[column]}
+                            onChange={(value) =>
+                              handleColumnFilterChange(column, value)
+                            }
+                            onReset={() => handleColumnFilterReset(column)}
+                          />
+                        </div>
                       </div>
-                      <FilterPopover
-                        column={column}
-                        value={columnFilters[column]}
-                        onChange={(value) =>
-                          handleColumnFilterChange(column, value)
-                        }
-                        onReset={() => handleColumnFilterReset(column)}
-                      />
-                    </div>
-                  </div>
-                </TableHead>
-              ))}
-              <TableHead>PHONE</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data.map((detail) => (
-              <TableRow key={detail._id}>
-                <TableCell>{detail.BANK}</TableCell>
-                <TableCell>
-                  <Link
-                    href={`/detail/${detail.IFSC}`}
-                    className="text-blue-600 hover:underline"
-                  >
-                    {detail.IFSC}
-                  </Link>
-                </TableCell>
-                <TableCell>{detail.BRANCH}</TableCell>
-                <TableCell>{detail.CITY1}</TableCell>
-                <TableCell>{detail.STATE}</TableCell>
-                <TableCell>{detail.PHONE || "N/A"}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                    </TableHead>
+                  ))}
+                  <TableHead>PHONE</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.map((detail) => (
+                  <TableRow key={detail._id}>
+                    <TableCell>{detail.BANK}</TableCell>
+                    <TableCell>
+                      <Link
+                        href={`/detail/${detail.IFSC}`}
+                        className="text-blue-600 hover:underline"
+                      >
+                        {detail.IFSC}
+                      </Link>
+                    </TableCell>
+                    <TableCell>{detail.BRANCH}</TableCell>
+                    <TableCell>{detail.CITY1}</TableCell>
+                    <TableCell>{detail.STATE}</TableCell>
+                    <TableCell>{detail.PHONE || "N/A"}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </div>
       </div>
 
-      <div className="mt-4 flex justify-between items-center">
+      <div className="mt-4 flex justify-between items-center text-nowrap">
         <ItemsPerPage
           value={itemsPerPage}
           onChange={handleItemsPerPageChange}
@@ -197,14 +199,12 @@ const DetailsPage = () => {
           totalPages={paginationInfo.totalPages}
           onPageChange={handlePageChange}
         />
-      </div>
-
-      <div className="mt-4 text-sm text-gray-600">
-        <p>
-          Showing {paginationInfo.startIndex + 1} to {paginationInfo.endIndex}{" "}
-          of {totalItems} results
-          {searchQuery && ` (filtered from ${allItems} total records)`}
-        </p>
+        <div className="mt-4 text-sm text-gray-600">
+          <p>
+            Showing {paginationInfo.startIndex + 1} to {paginationInfo.endIndex}{" "}
+            of {totalItems} results
+          </p>
+        </div>
       </div>
     </div>
   );

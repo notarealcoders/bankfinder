@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 export function useTableData(initialState) {
   const [data, setData] = useState([]);
   const [totalItems, setTotalItems] = useState(0);
-  const [allItems, setAllItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -17,46 +17,40 @@ export function useTableData(initialState) {
       searchQuery,
     }) => {
       try {
-        const response = await fetch(
-          `/api/details?page=${currentPage}&limit=${itemsPerPage}&sort=${sortColumn}&order=${sortOrder}`
-        );
+        setLoading(true);
+
+        // Build URL with query parameters
+        const url = new URL("/api/details", window.location.origin);
+        url.searchParams.set("page", currentPage);
+        url.searchParams.set("limit", itemsPerPage);
+        url.searchParams.set("sort", sortColumn);
+        url.searchParams.set("order", sortOrder);
+
+        if (searchQuery) {
+          url.searchParams.set("search", searchQuery);
+        }
+
+        // Add filters to URL
+        Object.entries(filters).forEach(([key, value]) => {
+          if (value) {
+            url.searchParams.set(`filter_${key.toLowerCase()}`, value);
+          }
+        });
+
+        const response = await fetch(url);
         const result = await response.json();
 
         if (result.success) {
-          let filteredData = result.data;
-
-          // Apply filters
-          if (Object.values(filters).some((value) => value)) {
-            filteredData = filteredData.filter((item) => {
-              return Object.entries(filters).every(([key, value]) => {
-                if (!value) return true;
-                return item[key]
-                  ?.toString()
-                  .toLowerCase()
-                  .includes(value.toLowerCase());
-              });
-            });
-          }
-
-          // Apply search
-          if (searchQuery) {
-            const query = searchQuery.toLowerCase();
-            filteredData = filteredData.filter((item) => {
-              return Object.values(item).some((value) =>
-                value?.toString().toLowerCase().includes(query)
-              );
-            });
-          }
-
-          setData(filteredData);
-          setTotalItems(filteredData.length);
-          setAllItems(result.total);
+          setData(result.data);
+          setTotalItems(result.total);
+          setTotalPages(result.totalPages);
           setError(null);
         } else {
           setError(result.error);
         }
       } catch (err) {
         setError("Failed to fetch data");
+        console.error("Error fetching data:", err);
       } finally {
         setLoading(false);
       }
@@ -67,7 +61,7 @@ export function useTableData(initialState) {
   return {
     data,
     totalItems,
-    allItems,
+    totalPages,
     error,
     loading,
     fetchData,

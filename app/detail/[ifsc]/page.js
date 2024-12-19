@@ -1,19 +1,26 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation"; // To handle navigation
+import React, { use } from "react";
+import { useRouter } from "next/navigation";
+import BankDetailCard from "@/components/bank/BankDetailCard";
+import BankDescription from "@/components/bank/BankDescription";
+import IFSCInfo from "@/components/bank/IFSCInfo";
+import FAQAccordion from "@/components/bank/FAQAccordion";
+import Spinner from "@/components/ui/spinner";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 
-const IFSCDetailPage = ({ params }) => {
-  const { ifsc } = params;
-  console.log("ifsc", ifsc); // Get the dynamic IFSC code from the URL
-  const [detail, setDetail] = useState(null);
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(true);
+const BankDetailPage = ({ params }) => {
+  const { ifsc } = use(params);
+  const router = useRouter();
+  const [detail, setDetail] = React.useState(null);
+  const [error, setError] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
 
-  useEffect(() => {
-    const fetchDetails = async () => {
+  React.useEffect(() => {
+    const fetchDetail = async () => {
       try {
-        const response = await fetch(`/api/detail/${ifsc}`); // API endpoint for fetching details by IFSC
+        const response = await fetch(`/api/detail/${ifsc}`);
         const data = await response.json();
 
         if (data.success) {
@@ -22,57 +29,63 @@ const IFSCDetailPage = ({ params }) => {
           setError(data.error);
         }
       } catch (err) {
-        setError("Failed to fetch data");
+        setError("Failed to fetch bank details");
       } finally {
         setLoading(false);
       }
     };
 
     if (ifsc) {
-      fetchDetails();
+      fetchDetail();
     }
   }, [ifsc]);
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Spinner />
+      </div>
+    );
   }
 
   if (error) {
-    return <div>Error: {error}</div>;
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+        <p className="text-red-500">{error}</p>
+        <Button onClick={() => router.back()} variant="outline">
+          <ArrowLeft className="mr-2 h-4 w-4" /> Go Back
+        </Button>
+      </div>
+    );
   }
 
   if (!detail) {
-    return <div>No details found for the given IFSC code.</div>;
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+        <p>No details found for the given IFSC code.</p>
+        <Button onClick={() => router.back()} variant="outline">
+          <ArrowLeft className="mr-2 h-4 w-4" /> Go Back
+        </Button>
+      </div>
+    );
   }
 
   return (
-    <div>
-      <h1 className="text-xl font-bold mb-4">Bank Details</h1>
-      <div className="border p-4 rounded-lg shadow-md bg-white">
-        <p>
-          <strong>Bank Name:</strong> {detail.BANK}
-        </p>
-        <p>
-          <strong>IFSC Code:</strong> {detail.IFSC}
-        </p>
-        <p>
-          <strong>Branch:</strong> {detail.BRANCH}
-        </p>
-        <p>
-          <strong>Address:</strong> {detail.ADDRESS}
-        </p>
-        <p>
-          <strong>City:</strong> {detail.CITY1}
-        </p>
-        <p>
-          <strong>State:</strong> {detail.STATE}
-        </p>
-        <p>
-          <strong>Phone:</strong> {detail.PHONE || "N/A"}
-        </p>
+    <div className="container mx-auto p-4 md:p-8">
+      <div className="mb-6">
+        <Button onClick={() => router.back()} variant="outline">
+          <ArrowLeft className="mr-2 h-4 w-4" /> Back to List
+        </Button>
+      </div>
+
+      <div className="space-y-8">
+        <BankDetailCard detail={detail} />
+        <BankDescription bank={detail} />
+        <IFSCInfo />
+        <FAQAccordion />
       </div>
     </div>
   );
 };
 
-export default IFSCDetailPage;
+export default BankDetailPage;
