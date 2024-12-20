@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectToDatabase from "@/lib/mongodb";
 import Details from "@/models/Details";
+import { handleApiError } from "@/lib/utils/api";
 
 export async function GET(req, { params }) {
   try {
@@ -33,10 +34,6 @@ export async function GET(req, { params }) {
       },
     });
   } catch (error) {
-    console.error("Error fetching bank info:", error);
-    return NextResponse.json(
-      { success: false, error: "Failed to fetch bank information" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Failed to fetch bank information");
   }
 }

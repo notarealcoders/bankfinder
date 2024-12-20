@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 import { useBankInfo } from "@/hooks/useBankInfo";
 import BankStats from "@/components/banks/BankStats";
 import BranchList from "@/components/banks/BranchList";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function BankPage({ params }) {
-  const { bank } = params;
+  const { bank } = use(params);
   const { data, loading, error } = useBankInfo(bank);
 
   if (error) {

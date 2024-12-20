@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import connectToDatabase from "@/lib/mongodb";
 import Details from "@/models/Details";
+import { handleApiError } from "@/lib/utils/api";
 
 export async function GET(req, { params }) {
   try {
-    await connectToDatabase();
-    const { ifsc } = params;
+    // Await params before destructuring
+    const ifsc = await params.ifsc;
 
+    await connectToDatabase();
     const detail = await Details.findOne({ IFSC: ifsc }).lean();
 
     if (!detail) {
@@ -18,10 +20,6 @@ export async function GET(req, { params }) {
 
     return NextResponse.json({ success: true, data: detail });
   } catch (error) {
-    console.error("Error fetching bank detail:", error);
-    return NextResponse.json(
-      { success: false, error: "Failed to fetch bank detail" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Failed to fetch bank detail");
   }
 }
