@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import PaginationControls from "@/components/pagination/PaginationControls";
 import ItemsPerPage from "@/components/pagination/ItemsPerPage";
 import { FilterPopover } from "@/components/filters/FilterPopover";
@@ -17,6 +17,7 @@ import Link from "next/link";
 import { ArrowUp, ArrowDown, ArrowDownUp } from "lucide-react";
 import { useTableData } from "@/hooks/useTableData";
 import { usePagination } from "@/hooks/usePagination";
+import { debounce } from "@/lib/utils/debounce";
 
 const DetailsPage = () => {
   const [sortColumn, setSortColumn] = useState("BANK");
@@ -40,8 +41,16 @@ const DetailsPage = () => {
 
   const { data, totalItems, error, loading, fetchData } = useTableData();
 
-  React.useEffect(() => {
-    fetchData({
+  // Debounced search function
+  const debouncedFetch = useCallback(
+    debounce((params) => {
+      fetchData(params);
+    }, 300),
+    [fetchData]
+  );
+
+  useEffect(() => {
+    debouncedFetch({
       currentPage,
       itemsPerPage,
       sortColumn,
@@ -56,7 +65,7 @@ const DetailsPage = () => {
     sortOrder,
     columnFilters,
     searchQuery,
-    fetchData,
+    debouncedFetch,
   ]);
 
   const handleSort = useCallback(
@@ -199,7 +208,7 @@ const DetailsPage = () => {
           totalPages={paginationInfo.totalPages}
           onPageChange={handlePageChange}
         />
-        <div className="mt-4 text-sm text-gray-600">
+        <div className="text-sm text-gray-600">
           <p>
             Showing {paginationInfo.startIndex + 1} to {paginationInfo.endIndex}{" "}
             of {totalItems} results

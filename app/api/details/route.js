@@ -16,14 +16,24 @@ export async function GET(req) {
     if (distinct) {
       const query = {};
 
+      // Add filters to query only if they have values
       if (bank) query.BANK = bank;
       if (state) query.STATE = state;
       if (city) query.CITY1 = city;
 
+      // Log the query for debugging
+      console.log("Distinct Query:", { field: distinct, query });
+
       const distinctValues = await Details.distinct(distinct, query);
+
+      // Sort the values and filter out null/empty values
+      const sortedValues = distinctValues
+        .filter((value) => value != null && value !== "")
+        .sort((a, b) => a.localeCompare(b));
+
       return NextResponse.json({
         success: true,
-        data: distinctValues.sort(),
+        data: sortedValues,
       });
     }
 
@@ -39,7 +49,6 @@ export async function GET(req) {
     ["BANK", "IFSC", "BRANCH", "CITY1", "STATE"].forEach((field) => {
       const filterValue = searchParams.get(`filter_${field.toLowerCase()}`);
       if (filterValue) {
-        // Decode the URI component and use exact matching
         query[field] = decodeURIComponent(filterValue);
       }
     });
