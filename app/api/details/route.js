@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectToDatabase from "@/lib/mongodb";
 import Details from "@/models/Details";
+import { getCache, setCache, CACHE_KEYS } from "@/lib/cache";
 
 export async function GET(req) {
   try {
@@ -11,25 +12,50 @@ export async function GET(req) {
     const bank = searchParams.get("bank");
     const state = searchParams.get("state");
     const city = searchParams.get("city");
+    const page = parseInt(searchParams.get("page")) || 1;
+    const limit = parseInt(searchParams.get("limit")) || 5;
+    const sort = searchParams.get("sort") || "BANK";
+    const order = searchParams.get("order") || "asc";
+    const search = searchParams.get("search") || "";
 
     // Handle distinct queries for the locator
     if (distinct) {
       const query = {};
 
-      // Add filters to query only if they have values
       if (bank) query.BANK = bank;
       if (state) query.STATE = state;
       if (city) query.CITY1 = city;
 
-      // Log the query for debugging
-      console.log("Distinct Query:", { field: distinct, query });
+      let cacheKey;
+      switch (distinct) {
+        case "BANK":
+          cacheKey = CACHE_KEYS.BANKS;
+          break;
+        case "STATE":
+          cacheKey = CACHE_KEYS.STATES(bank);
+          break;
+        case "CITY1":
+          cacheKey = CACHE_KEYS.CITIES(bank, state);
+          break;
+        case "BRANCH":
+          cacheKey = CACHE_KEYS.BRANCHES(bank, state, city);
+          break;
+      }
+
+      const cachedData = await getCache(cacheKey);
+      if (cachedData) {
+        return NextResponse.json({
+          success: true,
+          data: cachedData,
+        });
+      }
 
       const distinctValues = await Details.distinct(distinct, query);
-
-      // Sort the values and filter out null/empty values
       const sortedValues = distinctValues
         .filter((value) => value != null && value !== "")
         .sort((a, b) => a.localeCompare(b));
+
+      await setCache(cacheKey, sortedValues);
 
       return NextResponse.json({
         success: true,
@@ -38,12 +64,9 @@ export async function GET(req) {
     }
 
     // Handle regular queries
-    const page = parseInt(searchParams.get("page")) || 1;
-    const limit = parseInt(searchParams.get("limit")) || 5;
-    const sort = searchParams.get("sort") || "BANK";
-    const order = searchParams.get("order") || "asc";
-    const search = searchParams.get("search") || "";
     const query = {};
+    const skip = (page - 1) * limit;
+    const sortOrder = order === "asc" ? 1 : -1;
 
     // Handle filters
     ["BANK", "IFSC", "BRANCH", "CITY1", "STATE"].forEach((field) => {
@@ -64,9 +87,6 @@ export async function GET(req) {
         { STATE: searchRegex },
       ];
     }
-
-    const skip = (page - 1) * limit;
-    const sortOrder = order === "asc" ? 1 : -1;
 
     const [details, total] = await Promise.all([
       Details.find(query)

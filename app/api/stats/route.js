@@ -1,9 +1,19 @@
 import { NextResponse } from "next/server";
 import connectToDatabase from "@/lib/mongodb";
 import Details from "@/models/Details";
+import { getCache, setCache, CACHE_KEYS } from "@/lib/cache";
 
 export async function GET() {
   try {
+    // Try to get stats from cache
+    const cachedStats = await getCache(CACHE_KEYS.STATS);
+    if (cachedStats) {
+      return NextResponse.json({
+        success: true,
+        data: cachedStats,
+      });
+    }
+
     await connectToDatabase();
 
     const [totalBranches, bankDistribution, stateDistribution] =
@@ -21,13 +31,18 @@ export async function GET() {
         ]),
       ]);
 
+    const stats = {
+      totalBranches,
+      bankDistribution,
+      stateDistribution,
+    };
+
+    // Cache the stats
+    await setCache(CACHE_KEYS.STATS, stats);
+
     return NextResponse.json({
       success: true,
-      data: {
-        totalBranches,
-        bankDistribution,
-        stateDistribution,
-      },
+      data: stats,
     });
   } catch (error) {
     console.error("Error fetching stats:", error);

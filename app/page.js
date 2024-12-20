@@ -1,10 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { MapPin, Search } from "lucide-react";
-import { initializeCache } from "@/lib/cache/initCache";
-
-// In your startup code
-await initializeCache();
 
 export default function Home() {
   return (
