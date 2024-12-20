@@ -6,9 +6,13 @@ import BankDetailCard from "@/components/bank/BankDetailCard";
 import BankDescription from "@/components/bank/BankDescription";
 import IFSCInfo from "@/components/bank/IFSCInfo";
 import FAQAccordion from "@/components/bank/FAQAccordion";
+import BankMap from "@/components/features/BankMap";
+import ShareButton from "@/components/features/ShareButton";
+import ExportButton from "@/components/features/ExportButton";
 import Spinner from "@/components/ui/spinner";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { Toaster } from "sonner";
 
 const BankDetailPage = ({ params }) => {
   const { ifsc } = use(params);
@@ -71,20 +75,34 @@ const BankDetailPage = ({ params }) => {
   }
 
   return (
-    <div className="container mx-auto p-4 md:p-8">
-      <div className="mb-6">
-        <Button onClick={() => router.back()} variant="outline">
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back to List
-        </Button>
-      </div>
+    <>
+      <Toaster position="top-right" />
+      <div className="container mx-auto p-4 md:p-8">
+        <div className="mb-6 flex justify-between items-center">
+          <Button onClick={() => router.back()} variant="outline">
+            <ArrowLeft className="mr-2 h-4 w-4" /> Back
+          </Button>
+          <div className="flex gap-2">
+            <ShareButton branchData={detail} />
+            <ExportButton data={detail} />
+          </div>
+        </div>
 
-      <div className="space-y-8">
-        <BankDetailCard detail={detail} />
-        <BankDescription bank={detail} />
-        <IFSCInfo />
-        <FAQAccordion />
+        <div className="space-y-8">
+          <BankDetailCard detail={detail} />
+          <div className="grid md:grid-cols-2 gap-8">
+            <BankDescription bank={detail} />
+            <BankMap
+              address={detail.ADDRESS}
+              city={detail.CITY1}
+              state={detail.STATE}
+            />
+          </div>
+          <IFSCInfo />
+          <FAQAccordion />
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
