@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/table";
 import Link from "next/link";
 
-const ComparisonTable = ({ branches }) => {
+const ComparisonTable = ({ branches = [] }) => {
   const fields = [
     { key: "BANK", label: "Bank" },
     { key: "IFSC", label: "IFSC" },
@@ -40,24 +40,24 @@ const ComparisonTable = ({ branches }) => {
               <TableRow key={key}>
                 <TableCell className="font-medium">{label}</TableCell>
                 <TableCell>
-                  {key === "IFSC" ? (
+                  {key === "IFSC" && branches[0]?.[key] ? (
                     <Link
-                      href={`/detail/${branches[0]?.[key]}`}
+                      href={`/detail/${branches[0][key]}`}
                       className="text-blue-600 hover:underline"
                     >
-                      {branches[0]?.[key]}
+                      {branches[0][key]}
                     </Link>
                   ) : (
                     branches[0]?.[key] || "N/A"
                   )}
                 </TableCell>
                 <TableCell>
-                  {key === "IFSC" ? (
+                  {key === "IFSC" && branches[1]?.[key] ? (
                     <Link
-                      href={`/detail/${branches[1]?.[key]}`}
+                      href={`/detail/${branches[1][key]}`}
                       className="text-blue-600 hover:underline"
                     >
-                      {branches[1]?.[key]}
+                      {branches[1][key]}
                     </Link>
                   ) : (
                     branches[1]?.[key] || "N/A"
@@ -71,5 +71,3 @@ const ComparisonTable = ({ branches }) => {
     </Card>
   );
 };
-
-export default ComparisonTable;

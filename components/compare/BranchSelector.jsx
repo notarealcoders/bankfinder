@@ -30,15 +30,16 @@ const BranchSelector = ({ value, onChange }) => {
 
     try {
       const response = await fetch(
-        `/api/locate?bank=${encodeURIComponent(
-          selectedBank
-        )}&state=${encodeURIComponent(selectedState)}&city=${encodeURIComponent(
-          selectedCity
-        )}&branch=${encodeURIComponent(branch)}`
+        `/api/locate?${new URLSearchParams({
+          bank: selectedBank,
+          state: selectedState,
+          city: selectedCity,
+          branch,
+        })}`
       );
       const data = await response.json();
 
-      if (data.success) {
+      if (data.success && data.data) {
         onChange(data.data);
       }
     } catch (error) {
@@ -57,11 +58,12 @@ const BranchSelector = ({ value, onChange }) => {
             <SelectValue placeholder="Select Bank" />
           </SelectTrigger>
           <SelectContent>
-            {banks.map((bank) => (
-              <SelectItem key={bank} value={bank}>
-                {bank}
-              </SelectItem>
-            ))}
+            {Array.isArray(banks) &&
+              banks.map((bank) => (
+                <SelectItem key={bank} value={bank}>
+                  {bank}
+                </SelectItem>
+              ))}
           </SelectContent>
         </Select>
 
@@ -74,11 +76,12 @@ const BranchSelector = ({ value, onChange }) => {
             <SelectValue placeholder="Select State" />
           </SelectTrigger>
           <SelectContent>
-            {states.map((state) => (
-              <SelectItem key={state} value={state}>
-                {state}
-              </SelectItem>
-            ))}
+            {Array.isArray(states) &&
+              states.map((state) => (
+                <SelectItem key={state} value={state}>
+                  {state}
+                </SelectItem>
+              ))}
           </SelectContent>
         </Select>
 
@@ -91,11 +94,12 @@ const BranchSelector = ({ value, onChange }) => {
             <SelectValue placeholder="Select City" />
           </SelectTrigger>
           <SelectContent>
-            {cities.map((city) => (
-              <SelectItem key={city} value={city}>
-                {city}
-              </SelectItem>
-            ))}
+            {Array.isArray(cities) &&
+              cities.map((city) => (
+                <SelectItem key={city} value={city}>
+                  {city}
+                </SelectItem>
+              ))}
           </SelectContent>
         </Select>
 
@@ -111,16 +115,15 @@ const BranchSelector = ({ value, onChange }) => {
             <SelectValue placeholder="Select Branch" />
           </SelectTrigger>
           <SelectContent>
-            {branches.map((branch) => (
-              <SelectItem key={branch} value={branch}>
-                {branch}
-              </SelectItem>
-            ))}
+            {Array.isArray(branches) &&
+              branches.map((branch) => (
+                <SelectItem key={branch} value={branch}>
+                  {branch}
+                </SelectItem>
+              ))}
           </SelectContent>
         </Select>
       </CardContent>
     </Card>
   );
 };
-
-export default BranchSelector;
