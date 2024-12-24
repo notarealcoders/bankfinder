@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { MapPin, Search, BarChart2, ArrowLeftRight } from "lucide-react";
+import { MapPin, Search, BarChart2, ArrowLeftRight, Filter } from "lucide-react";
 
 export default function Header() {
   return (
@@ -23,6 +23,12 @@ export default function Header() {
               <Button variant="ghost" size="sm">
                 <MapPin className="mr-2 h-4 w-4" />
                 Locate
+              </Button>
+            </Link>
+            <Link href="/filter">
+              <Button variant="ghost" size="sm">
+                <Filter className="mr-2 h-4 w-4" />
+                Advanced Search
               </Button>
             </Link>
             <Link href="/compare">

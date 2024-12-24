@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import connectToDatabase from "@/lib/mongodb";
 import Details from "@/models/Details";
-import { getCache, setCache, CACHE_KEYS } from "@/lib/cache";
+import { handleApiError } from "@/lib/utils/api";
 
 export async function GET(req) {
   try {
@@ -26,36 +26,10 @@ export async function GET(req) {
       if (state) query.STATE = state;
       if (city) query.CITY1 = city;
 
-      let cacheKey;
-      switch (distinct) {
-        case "BANK":
-          cacheKey = CACHE_KEYS.BANKS;
-          break;
-        case "STATE":
-          cacheKey = CACHE_KEYS.STATES(bank);
-          break;
-        case "CITY1":
-          cacheKey = CACHE_KEYS.CITIES(bank, state);
-          break;
-        case "BRANCH":
-          cacheKey = CACHE_KEYS.BRANCHES(bank, state, city);
-          break;
-      }
-
-      const cachedData = await getCache(cacheKey);
-      if (cachedData) {
-        return NextResponse.json({
-          success: true,
-          data: cachedData,
-        });
-      }
-
       const distinctValues = await Details.distinct(distinct, query);
       const sortedValues = distinctValues
         .filter((value) => value != null && value !== "")
         .sort((a, b) => a.localeCompare(b));
-
-      await setCache(cacheKey, sortedValues);
 
       return NextResponse.json({
         success: true,
@@ -106,10 +80,6 @@ export async function GET(req) {
       hasMore: skip + details.length < total,
     });
   } catch (error) {
-    console.error("Error fetching details:", error);
-    return NextResponse.json(
-      { success: false, error: "Failed to fetch data" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Failed to fetch data");
   }
 }
