@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { logRequest } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 import { rateLimit } from '@/lib/utils/rateLimit';
 
 export async function middleware(request) {
@@ -16,8 +16,11 @@ export async function middleware(request) {
     response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
     // Log request
-    const requestLogger = logRequest(request);
-    response.on('finish', requestLogger.finish);
+    logger.info('API Request', {
+      method: request.method,
+      path: request.nextUrl.pathname,
+      userAgent: request.headers.get('user-agent'),
+    });
 
     return response;
   }

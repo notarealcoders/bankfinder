@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { MapPin, Search, BarChart2, ArrowLeftRight, Filter } from "lucide-react";
+import ThemeToggle from "./ThemeToggle";
 
 export default function Header() {
   return (
-    <header className="border-b">
+    <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4 py-4">
         <nav className="flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
@@ -12,7 +13,7 @@ export default function Header() {
             <span className="font-bold text-xl">Bank Finder</span>
           </Link>
 
-          <div className="flex gap-4">
+          <div className="flex items-center gap-4">
             <Link href="/dashboard">
               <Button variant="ghost" size="sm">
                 <BarChart2 className="mr-2 h-4 w-4" />
@@ -43,6 +44,7 @@ export default function Header() {
                 Search
               </Button>
             </Link>
+            <ThemeToggle />
           </div>
         </nav>
       </div>
